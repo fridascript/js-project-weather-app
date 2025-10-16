@@ -147,3 +147,36 @@ searchInput.addEventListener("input", async (e) => {
       }
 
       
+function changeDesign(symbol) {
+    const body = document.body;
+    const icon = document.getElementById("weather-icon");
+
+    // Default style settings
+    body.style.transition = "background-color 0.5s ease, color 0.5s ease";
+
+    if (symbol === 1) { // sunny
+        body.style.backgroundColor = "lightyellow";
+        body.style.color = "black";
+        icon.src = "icons/sunny.png";
+    }
+    else if (symbol === 3 || symbol === 4) { // cloudy
+        body.style.backgroundColor = "lightgray";
+        body.style.color = "red";
+        icon.src = "icons/cloudy.png";
+    }
+    else if (symbol === 5 || symbol === 6 || symbol === 9) { // rainy
+        body.style.backgroundColor = "lightblue";
+        body.style.color = "navy";
+        icon.src = "icons/rainy.png";
+    }
+    else if (symbol === 15) { // snowy
+        body.style.backgroundColor = "white";
+        body.style.color = "black";
+        icon.src = "icons/snowy.png";
+    }
+    else { // default
+        body.style.backgroundColor = "beige";
+        body.style.color = "black";
+        icon.src = "icons/default.png";
+    }
+}
