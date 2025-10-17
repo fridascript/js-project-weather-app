@@ -38,6 +38,9 @@ https://opendata-download-metfcst.smhi.se/api/category/snow1g/version/1/geotype/
 
 https://opendata.smhi.se/
 
+https://opendata.smhi.se/metobs/codes
+
+
 
 
 (-------- Example from session -------)
@@ -180,3 +183,105 @@ function changeDesign(symbol) {
         icon.src = "icons/default.png";
     }
 }
+
+
+-----------------------------------------------------------------
+From GEMINI
+
+//----------------------------------------------------------
+// SHOW WEATHER – temp, icon, condition, and message
+//----------------------------------------------------------
+function showCurrentWeather(
+  temp: number,
+  symbol: number,
+  condition: string // <-- Added to pass in the weather description
+): void {
+  // Get elements from the DOM
+  const tempElement = document.getElementById("temperature");
+  const conditionElement = document.getElementById("condition");
+  const iconElement = document.getElementById("icon") as HTMLImageElement | null;
+  const messageElement = document.getElementById("message");
+
+  // Check if all elements exist before proceeding
+  if (tempElement && iconElement && messageElement && conditionElement) {
+    // 1. Set the temperature and condition text in their correct elements
+    tempElement.textContent = `${Math.round(temp)}°C`;
+    conditionElement.textContent = condition;
+
+    // 2. Define variables for the message and icon source
+    let message: string;
+    let iconSrc: string;
+
+    // 3. Determine the correct message and icon based on the weather symbol
+    if (symbol === 1) {
+      message = "IT’S SUNNY, DON'T FORGET YOUR SUNNIES! ☀️";
+      iconSrc = "path/to/your/sunny-icon.svg"; // <-- Add your icon path
+    } else if (symbol === 3 || symbol === 4) {
+      message = "IT’S CLOUDY ☁️";
+      iconSrc = "path/to/your/cloudy-icon.svg"; // <-- Add your icon path
+    } else if ([5, 6, 9].includes(symbol)) {
+      message = "IT’S RAINY, DON'T FORGET YOUR UMBRELLA 🌧️";
+      iconSrc = "path/to/your/rainy-icon.svg"; // <-- Add your icon path
+    } else if (symbol === 15) {
+      message = "IT’S SNOWING ❄️";
+      iconSrc = "path/to/your/snow-icon.svg"; // <-- Add your icon path
+    } else {
+      message = "WEATHER UNKNOWN 🤔";
+      iconSrc = "path/to/your/unknown-icon.svg"; // <-- Add your icon path
+    }
+
+    // 4. Update the message text and icon image source
+    messageElement.textContent = message;
+    iconElement.src = iconSrc;
+  }
+}
+
+
+
+function for condition:
+function getCondition(symbol: number): string {
+  const conditions: Record<number, string> = {
+    1: "Clear sky",
+    2: "Nearly clear sky",
+    3: "Variable cloudiness",
+    4: "Halfclear sky",
+    5: "Cloudy",
+    6: "Overcast",
+    7: "Fog",
+    8: "Light rain showers",
+    9: "Moderate rain showers",
+    10: "Heavy rain showers",
+    11: "Thunderstorm",
+    12: "Light sleet showers",
+    13: "Moderate sleet showers",
+    14: "Heavy sleet showers",
+    15: "Light snow showers",
+    16: "Moderate snow showers",
+    17: "Heavy snow showers",
+    18: "Light rain",
+    19: "Moderate rain",
+    20: "Heavy rain",
+    21: "Thunder",
+    22: "Light sleet",
+    23: "Moderate sleet",
+    24: "Heavy sleet",
+    25: "Light snowfall",
+    26: "Moderate snowfall",
+    27: "Heavy snowfall",
+  };
+  return conditions[symbol] || "Unknown";
+}
+
+    const currentTemp = tempParam.values[0];
+    const weatherSymbol = symbolParam.values[0];
+    const condition = getCondition(weatherSymbol);
+-------------------------------------------------------
+
+const paragraphElement = document.getElementById('my-paragraph');
+const outputDiv = document.getElementById('output');
+
+// CORRECT: Use .textContent to get the text inside the element.
+outputDiv.textContent = 'The text is: ' + paragraphElement.textContent;
+
+// The result in the browser will be:
+// "The text is: This is some important text."
