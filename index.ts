@@ -3,7 +3,7 @@ const weatherURL: string =
   "https://opendata-download-metfcst.smhi.se/api/category/pmp3g/version/2/geotype/point/lon/18.0686/lat/59.3293/data.json";
 
 //--------------------------------------------------
-// TYPE'S 
+// TYPES
 //--------------------------------------------------
 interface SMHIParameter {
   name: string;
@@ -24,8 +24,20 @@ interface SMHIResponse {
   timeSeries: SMHITimeSeries[];
 }
 
-// function condition
+//--------------------------------------------------
+// UTIL: safe parameter lookup
+//--------------------------------------------------
+const getParamValue = (
+  ts: SMHITimeSeries,
+  key: string
+): number | undefined => {
+  const hit = ts.parameters.find((p: SMHIParameter) => p.name === key);
+  return hit?.values?.[0];
+};
 
+//--------------------------------------------------
+// CONDITION TEXT
+//--------------------------------------------------
 function getCondition(symbol: number): string {
   const conditions: Record<number, string> = {
     1: "Clear sky",
@@ -54,122 +66,181 @@ function getCondition(symbol: number): string {
     24: "Heavy sleet",
     25: "Light snowfall",
     26: "Moderate snowfall",
-    27: "Heavy snowfall"
+    27: "Heavy snowfall",
   };
   return conditions[symbol] || "Unknown";
 }
 
 //--------------------------------------------------
-// MAIN FUNCTION –fetch data from api
+// MAIN FUNCTION – fetch data from API
 //--------------------------------------------------
 async function fetchWeather(): Promise<void> {
   try {
     const response = await fetch(weatherURL);
     if (!response.ok) throw new Error(`HTTP error: ${response.status}`);
 
-    const data: SMHIResponse = await response.json();
+    const data = (await response.json()) as SMHIResponse;
+
+    if (!data.timeSeries || data.timeSeries.length === 0) {
+      console.error("No timeSeries data in response.");
+      return;
+    }
 
     const first = data.timeSeries[0];
 
-    const tempParam = first.parameters.find((p) => p.name === "t");
-    const symbolParam = first.parameters.find((p) => p.name === "Wsymb2");
+    const currentTemp = getParamValue(first, "t");
+    const weatherSymbol = getParamValue(first, "Wsymb2");
 
-
-    if (!tempParam || !symbolParam) {
-      throw new Error("Temperature or weather symbol not found in API data.");
+    if (typeof currentTemp !== "number" || typeof weatherSymbol !== "number") {
+      console.error("Missing temp or weather symbol.", {
+        currentTemp,
+        weatherSymbol,
+      });
+      return;
     }
 
-    const currentTemp = tempParam.values[0];
-    const weatherSymbol = symbolParam.values[0];
-    const conditionTemp = getCondition(weatherSymbol);
-    //predominant_precipitation_type_at_surface
+    const conditionText = getCondition(weatherSymbol);
 
-    showCurrentWeather(currentTemp, weatherSymbol, conditionTemp);
+    // predominant_precipitation_type_at_surface (reserved if you need later)
+
+    showCurrentWeather(currentTemp, weatherSymbol, conditionText);
     showForecast(data.timeSeries);
     changeDesign(weatherSymbol);
-
   } catch (error) {
     console.error("Error while fetching weather data:", error);
   }
 }
 
 //----------------------------------------------------------
-// SHOW WEATHER – temp, icon och message
+// SHOW WEATHER – temp, icon and message
 //----------------------------------------------------------
-
-function showCurrentWeather(temp: number, symbol: number, condition: string): void {
+function showCurrentWeather(
+  temp: number,
+  symbol: number,
+  condition: string
+): void {
   const tempElement = document.getElementById("temperature");
   const conditionTextElement = document.getElementById("condition");
   const iconElement = document.getElementById("icon") as HTMLImageElement | null;
   const messageElement = document.getElementById("message");
-  //const locationElement = document.getElementById("location");
 
+  if (tempElement) {
+    tempElement.textContent = `${condition} | ${Math.round(temp)}°`;
+  }
+  // If you want a separate condition line:
+  // if (conditionTextElement) conditionTextElement.textContent = condition;
 
-  if (tempElement && iconElement && messageElement && conditionTextElement) {
-    tempElement.textContent = `${condition} | ${temp}°`;
-    // conditionTextElement.textContent = condition;
+  if (iconElement) {
+    if (symbol === 1) iconElement.src = "img/sunny.png";
+    else if (symbol === 3 || symbol === 4) iconElement.src = "img/cloudy.png";
+    else if ([5, 6, 9].includes(symbol)) iconElement.src = "img/rainy.png";
+    else if (symbol === 15) iconElement.src = "img/snowy.png";
   }
 
-  if (symbol === 1) {
-    messageElement.textContent = "Get your sunnies on.Stockholm is looking rather great today.";
-  } else if (symbol === 3 || symbol === 4) {
-    messageElement.textContent = "Light a fire and get cosy. Stockholm is looking grey today.";
-  } else if ([5, 6, 9].includes(symbol)) {
-    messageElement.textContent = "Don’t forget your umbrella. It’s wet in Stockholm today.";
-  } else if (symbol === 15) {
-    messageElement.textContent = "IT’S SNOWING ❄️";
-  } else {
-    messageElement.textContent = "WEATHER UNKNOWN 🤔";
+  if (messageElement) {
+    if (symbol === 1) {
+      messageElement.textContent =
+        "Get your sunnies on. Stockholm is looking rather great today.";
+    } else if (symbol === 3 || symbol === 4) {
+      messageElement.textContent =
+        "Light a fire and get cosy. Stockholm is looking grey today.";
+    } else if ([5, 6, 9].includes(symbol)) {
+      messageElement.textContent =
+        "Don’t forget your umbrella. It’s wet in Stockholm today.";
+    } else if (symbol === 15) {
+      messageElement.textContent = "IT’S SNOWING ❄️";
+    } else {
+      messageElement.textContent = "WEATHER UNKNOWN 🤔";
+    }
   }
 }
 
-//---------------------------------------------
-// FORECAST - can wait
-//---------------------------------------------
+// //---------------------------------------------
+// // FORECAST
+// //---------------------------------------------
+// function showForecast(times: SMHITimeSeries[]): void {
+//   const forecastElement = document.getElementById("forecast");
+//   if (!forecastElement) return;
 
-function showForecast(times: SMHITimeSeries[]): void {
-  const forecastElement = document.getElementById("forecast");
-  if (!forecastElement) return;
+//   forecastElement.innerHTML = "";
 
-  forecastElement.innerHTML = "";
+//   // Assuming 3-hour steps: every 8th ≈ next day. Show next 5 days.
+//   for (let i = 8; i < 8 * 5; i += 8) {
+//     const t = times[i];
+//     if (!t) continue;
 
-  for (let i = 8; i < 8 * 5; i += 8) {
-    const t = times[i];
-    const tempParam = t.parameters.find((p) => p.name === "t");
+//     const temp = getParamValue(t, "t");
+//     if (typeof temp !== "number") continue;
+
+//     const date = t.validTime.slice(0, 10);
+//     forecastElement.innerHTML += `<p>${date}: ${Math.round(temp)}°C</p>`;
+//   }
+// }
+
+function showForecast(times) {
+  const forecastEl = document.getElementById("forecast");
+  if (!forecastEl) return;
+
+  forecastEl.innerHTML = ""; // clear old content
+
+  const today = new Date(times[0].validTime);
+  let daysAdded = 0;
+  let lastDate = today.toDateString();
+
+  for (const t of times) {
+    const thisDate = new Date(t.validTime);
+    const dateString = thisDate.toDateString();
+
+    // hoppa över samma dag
+    if (dateString === lastDate) continue;
+
+    lastDate = dateString;
+
+    const tempParam = t.parameters.find(p => p.name === "t");
     if (!tempParam) continue;
 
     const temp = tempParam.values[0];
-    const date = t.validTime.slice(0, 10);
-    forecastElement.innerHTML += `<p>${date}: ${temp}°C</p>`;
+    const weekday = thisDate.toLocaleDateString("en-US", { weekday: "long" });
+
+    forecastEl.innerHTML += `
+      <div class="forecast-row">
+        <span class="weekday">${weekday}</span>
+        <span class="temp">${temp}°</span>
+      </div>
+    `;
+
+    daysAdded++;
+    if (daysAdded >= 5) break; // visa bara 5 dagar (imorgon + 4 framåt)
   }
 }
+
 
 //--------------------------------------------------
 // CHANGING DESIGN DEPENDING ON WEATHER
 //--------------------------------------------------
 function changeDesign(symbol: number): void {
   const icon = document.getElementById("icon") as HTMLImageElement | null;
-  if (!icon) return;
 
-  if (symbol === 1) { //sunny
+  if (symbol === 1) {
+    // sunny
     document.body.style.backgroundColor = "#F7E9B9";
     document.body.style.color = "#2A5510";
-    icon.src = "img/sunny.png";
-
-  } else if (symbol === 3 || symbol === 4) { //cloudy
+    if (icon) icon.src = "img/sunny.png";
+  } else if (symbol === 3 || symbol === 4) {
+    // cloudy
     document.body.style.backgroundColor = "#FFFFFF";
     document.body.style.color = "#F47775";
-    icon.src = "img/cloudy.png";
-
-  } else if ([5, 6, 9].includes(symbol)) { //rainy
+    if (icon) icon.src = "img/cloudy.png";
+  } else if ([5, 6, 9].includes(symbol)) {
+    // rainy
     document.body.style.backgroundColor = "#BDE8FA";
     document.body.style.color = "#164A68";
-    icon.src = "img/rainy.png";
-
+    if (icon) icon.src = "img/rainy.png";
   } else if (symbol === 15) {
+    // snowy
     document.body.style.backgroundColor = "#FFFFFF";
     document.body.style.color = "#045381";
-
+    if (icon) icon.src = "img/snowy.png";
   } else {
     document.body.style.backgroundColor = "beige";
     document.body.style.color = "black";
@@ -177,6 +248,6 @@ function changeDesign(symbol: number): void {
 }
 
 //---------------------------------------------
-// 6️⃣  STARTING THE APP 
+// 6️⃣  STARTING THE APP
 //---------------------------------------------
 fetchWeather();
