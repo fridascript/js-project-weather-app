@@ -138,7 +138,7 @@ function showCurrentWeather(temp, symbol, condition, cityName) {
     if (tempElement)
         tempElement.textContent = "".concat(condition, " | ").concat(Math.round(temp), "\u00B0");
     if (iconElement) {
-        if (symbol === 1)
+        if ([1, 2].includes(symbol))
             iconElement.src = "img/sunny.png";
         else if ([3, 4, 5, 6].includes(symbol))
             iconElement.src = "img/cloudy.png";
@@ -148,7 +148,7 @@ function showCurrentWeather(temp, symbol, condition, cityName) {
             iconElement.src = "img/snowy.png";
     }
     if (messageElement) {
-        if (symbol === 1)
+        if ([1, 2].includes(symbol))
             messageElement.textContent =
                 "Get your sunnies on. ".concat(cityName, " is looking rather great today.");
         else if ([3, 4, 5, 6].includes(symbol))
@@ -230,7 +230,7 @@ function changeDesign(symbol) {
     var searchBox = document.querySelector(".search input");
     var searchBtn = document.querySelector(".search button");
     // sunny
-    if (symbol === 1) {
+    if ([1, 2].includes(symbol)) {
         document.body.style.backgroundColor = "#F7E9B9";
         document.body.style.color = "#2A5510";
         if (icon)

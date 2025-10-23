@@ -121,14 +121,14 @@ function showCurrentWeather(
   if (tempElement) tempElement.textContent = `${condition} | ${Math.round(temp)}°`;
 
   if (iconElement) {
-    if (symbol === 1) iconElement.src = "img/sunny.png";
+    if ([1, 2].includes(symbol)) iconElement.src = "img/sunny.png";
     else if ([3, 4, 5, 6].includes(symbol)) iconElement.src = "img/cloudy.png";
     else if ([5, 6, 9, 18, 19, 20].includes(symbol)) iconElement.src = "img/rainy.png";
     else if (symbol === 15) iconElement.src = "img/snowy.png";
   }
 
   if (messageElement) {
-    if (symbol === 1) messageElement.textContent =
+    if ([1, 2].includes(symbol)) messageElement.textContent =
       `Get your sunnies on. ${cityName} is looking rather great today.`;
     else if ([3, 4, 5, 6].includes(symbol)) messageElement.textContent =
       `Light a fire and get cosy. ${cityName} is looking grey today.`;
@@ -220,7 +220,7 @@ function changeDesign(symbol: number): void {
   const searchBtn = document.querySelector(".search button") as HTMLButtonElement | null;
 
   // sunny
-  if (symbol === 1) {
+  if ([1, 2].includes(symbol)) {
     document.body.style.backgroundColor = "#F7E9B9";
     document.body.style.color = "#2A5510";
     if (icon) icon.src = "img/sunny.png";
