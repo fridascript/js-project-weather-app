@@ -12,7 +12,7 @@
 - Follow the guidelines on how to write clean code
 
 
- (------- Setup -------)
+ (------- Layout of the app -------)
 
 Sections:
 
@@ -25,6 +25,8 @@ Message showing depending on weather
 
 Forecast 
 
+Search bar- Stockholm, Umeå, Malmö, Göteborg, Köpenhamn
+
 +
 background changing depending on weather
 
@@ -32,8 +34,7 @@ background changing depending on weather
 (------- Links -------)
 
 https://wpt-a-tst.smhi.se/backend-startpage/geo/autocomplete/places/$%7Bcity%7D?pmponly=true
-
-
+https://wpt-a-tst.smhi.se/backend-startpage/geo/autocomplete/places/[query]?pmponly=true
 https://opendata-download-metfcst.smhi.se/api/category/snow1g/version/1/geotype/point/lon/18.062639/lat/59.329468/data.json?timeseries=24
 
 https://opendata.smhi.se/
@@ -43,7 +44,7 @@ https://opendata.smhi.se/metobs/codes
 
 
 
-(-------- Example from session -------)
+(-------- Example from session with jennie to use -------)
 
 const now = new Date()
 console.log(now.getYear())
@@ -59,54 +60,13 @@ if (month === 2) {
   document.body.style.backgroundColor = "pink";
 }
 
-(------ Various things to add --------)
-
-  "createdTime": "2025-10-15T09:29:06Z",
-  "referenceTime": "2025-10-15T09:15:00Z",
-  "geometry": {
-    "type": "Point",
-    "coordinates": [18.077207, 59.33036]
-  },
-  "timeSeries": [
-    {
-      "time": "2025-10-15T10:00:00Z",
-      "intervalParametersStartTime": "2025-10-15T09:00:00Z",
-      "data": {
-        "air_temperature": 11.9,
-        "wind_from_direction": 273,
-        "wind_speed": 2.6,
-        "wind_speed_of_gust": 5.3,
-        "relative_humidity": 75,
-        "air_pressure_at_mean_sea_level": 1018,
-        "visibility_in_air": 21.5,
-        "thunderstorm_probability": 0,
-        "probability_of_frozen_precipitation": 0,
-        "cloud_area_fraction": 4,
-        "low_type_cloud_area_fraction": 2,
-        "medium_type_cloud_area_fraction": 0,
-        "high_type_cloud_area_fraction": 0,
-        "cloud_base_altitude": 9999,
-        "cloud_top_altitude": 9999,
-        "precipitation_amount_mean": 0,
-        "precipitation_amount_min": 0,
-        "precipitation_amount_max": 0,
-        "precipitation_amount_median": 0,
-        "probability_of_precipitation": 0,
-        "precipitation_frozen_part": -9,
-        "predominant_precipitation_type_at_surface": 0,
-        "symbol_code": 3
-      }
-    }]
-
-
-
 
 (-------- Styling -------)
 
 font: Montserrat
 
 sunny
-yellow background: #F7E9B9;
+background: #F7E9B9;
 color: #2A5510;
 
 raining
@@ -115,10 +75,10 @@ raining
 
 cloudy
 #FFFFFF
-background: #F47775;
+#F47775;
 
 
-(-------- Search input ------)
+(-------- Example search input from last project ------)
 
 const searchInput = document.getElementById("searchInput");
 
@@ -132,7 +92,7 @@ searchInput.addEventListener("input", async (e) => {
       renderRecipes(localRecipes);
     }
     return;
-  }
+  }}
 
   if (useAPI) {
     try {
@@ -147,100 +107,11 @@ searchInput.addEventListener("input", async (e) => {
       if (!data.results || data.results.length === 0) {
         container.innerHTML = `<p>No API results for "${searchTerm}".</p>`;
         return;
-      }
+      } } } 
 
+
+(-------- Weather symbols  ------)
       
-function changeDesign(symbol) {
-    const body = document.body;
-    const icon = document.getElementById("weather-icon");
-
-    // Default style settings
-    body.style.transition = "background-color 0.5s ease, color 0.5s ease";
-
-    if (symbol === 1) { // sunny
-        body.style.backgroundColor = "lightyellow";
-        body.style.color = "black";
-        icon.src = "icons/sunny.png";
-    }
-    else if (symbol === 3 || symbol === 4) { // cloudy
-        body.style.backgroundColor = "lightgray";
-        body.style.color = "red";
-        icon.src = "icons/cloudy.png";
-    }
-    else if (symbol === 5 || symbol === 6 || symbol === 9) { // rainy
-        body.style.backgroundColor = "lightblue";
-        body.style.color = "navy";
-        icon.src = "icons/rainy.png";
-    }
-    else if (symbol === 15) { // snowy
-        body.style.backgroundColor = "white";
-        body.style.color = "black";
-        icon.src = "icons/snowy.png";
-    }
-    else { // default
-        body.style.backgroundColor = "beige";
-        body.style.color = "black";
-        icon.src = "icons/default.png";
-    }
-}
-
-
------------------------------------------------------------------
-From GEMINI
-
-//----------------------------------------------------------
-// SHOW WEATHER – temp, icon, condition, and message
-//----------------------------------------------------------
-function showCurrentWeather(
-  temp: number,
-  symbol: number,
-  condition: string // <-- Added to pass in the weather description
-): void {
-  // Get elements from the DOM
-  const tempElement = document.getElementById("temperature");
-  const conditionElement = document.getElementById("condition");
-  const iconElement = document.getElementById("icon") as HTMLImageElement | null;
-  const messageElement = document.getElementById("message");
-
-  // Check if all elements exist before proceeding
-  if (tempElement && iconElement && messageElement && conditionElement) {
-    // 1. Set the temperature and condition text in their correct elements
-    tempElement.textContent = `${Math.round(temp)}°C`;
-    conditionElement.textContent = condition;
-
-    // 2. Define variables for the message and icon source
-    let message: string;
-    let iconSrc: string;
-
-    // 3. Determine the correct message and icon based on the weather symbol
-    if (symbol === 1) {
-      message = "IT’S SUNNY, DON'T FORGET YOUR SUNNIES! ☀️";
-      iconSrc = "path/to/your/sunny-icon.svg"; // <-- Add your icon path
-    } else if (symbol === 3 || symbol === 4) {
-      message = "IT’S CLOUDY ☁️";
-      iconSrc = "path/to/your/cloudy-icon.svg"; // <-- Add your icon path
-    } else if ([5, 6, 9].includes(symbol)) {
-      message = "IT’S RAINY, DON'T FORGET YOUR UMBRELLA 🌧️";
-      iconSrc = "path/to/your/rainy-icon.svg"; // <-- Add your icon path
-    } else if (symbol === 15) {
-      message = "IT’S SNOWING ❄️";
-      iconSrc = "path/to/your/snow-icon.svg"; // <-- Add your icon path
-    } else {
-      message = "WEATHER UNKNOWN 🤔";
-      iconSrc = "path/to/your/unknown-icon.svg"; // <-- Add your icon path
-    }
-
-    // 4. Update the message text and icon image source
-    messageElement.textContent = message;
-    iconElement.src = iconSrc;
-  }
-}
-
-
-
-function for condition:
-function getCondition(symbol: number): string {
-  const conditions: Record<number, string> = {
     1: "Clear sky",
     2: "Nearly clear sky",
     3: "Variable cloudiness",
@@ -268,20 +139,100 @@ function getCondition(symbol: number): string {
     25: "Light snowfall",
     26: "Moderate snowfall",
     27: "Heavy snowfall",
-  };
-  return conditions[symbol] || "Unknown";
-}
-
-    const currentTemp = tempParam.values[0];
-    const weatherSymbol = symbolParam.values[0];
-    const condition = getCondition(weatherSymbol);
 -------------------------------------------------------
 
-const paragraphElement = document.getElementById('my-paragraph');
-const outputDiv = document.getElementById('output');
 
-// CORRECT: Use .textContent to get the text inside the element.
-outputDiv.textContent = 'The text is: ' + paragraphElement.textContent;
+----------------------------------------------------------------------
+****** GEO Location conversion from hard coded to geo location ******
+----------------------------------------------------------------------
+DEFAULT COORDINATES – Stockholm 
+const DEFAULT_LAT = 59.3293; 
+const DEFAULT_LON = 18.0686; 
+const DEFAULT_CITY = "stockholm";
 
-// The result in the browser will be:
-// "The text is: This is some important text."
+
+TS code
+You can swap those hard-coded defaults for a “best available” location resolver: 
+try the browser’s Geolocation API first, fall back to IP-based location, and finally 
+use your Stockholm defaults if all else fails. Here’s a drop-in TypeScript utility 
+plus a quick example of wiring it to your SMHI fetch.
+
+// location.ts
+type AppLocation = {
+  lat: number;
+  lon: number;
+  city?: string;
+  source: "geolocation" | "ip" | "fallback";
+};
+
+// --- Public: get the best available location ---
+export async function getAppLocation(): Promise<AppLocation> {
+  // 1) Browser geolocation (requires HTTPS or localhost)
+  try {
+    const coords = await getBrowserCoords({ timeout: 8000, maximumAge: 5 * 60_000 });
+    const city = await reverseGeocode(coords.lat, coords.lon).catch(() => undefined);
+    return { ...coords, city, source: "geolocation" };
+  } catch { /* ignore and fall through */ }
+
+  // 2) IP-based fallback (approximate city-level)
+  try {
+    const ip = await ipLookup();
+    return { ...ip, source: "ip" };
+  } catch { /* ignore and fall through */ }
+
+  // 3) Final fallback – your previous defaults
+  return { lat: 59.3293, lon: 18.0686, city: "Stockholm", source: "fallback" };
+
+
+// --- Helpers ---
+function getBrowserCoords(options: PositionOptions): Promise<{ lat: number; lon: number }> {
+  if (!("geolocation" in navigator)) return Promise.reject(new Error("Geolocation not supported"));
+  // Must be called after a user gesture on iOS/Safari
+  return new Promise((resolve, reject) => {
+    navigator.geolocation.getCurrentPosition(
+      pos => resolve({ lat: pos.coords.latitude, lon: pos.coords.longitude }),
+      err => reject(err),
+      options
+    );
+  });
+}
+
+async function reverseGeocode(lat: number, lon: number): Promise<string | undefined> {
+  // OpenStreetMap Nominatim (respect usage policy; consider adding your own server/app id)
+  const url = `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lon}`;
+  const res = await fetch(url, { headers: { "Accept": "application/json" } });
+  if (!res.ok) return undefined;
+  const data = await res.json();
+  // Try city/town/village fields in order
+  return data?.address?.city || data?.address?.town || data?.address?.village || data?.address?.municipality;
+}
+
+async function ipLookup(): Promise<{ lat: number; lon: number; city?: string }> {
+  // Several free services exist; here’s ipapi.co as an example
+  const res = await fetch("https://ipapi.co/json/");
+  if (!res.ok) throw new Error("IP lookup failed");
+  const data = await res.json();
+  return { lat: data.latitude, lon: data.longitude, city: data.city };
+}
+
+------------------------------------
+Use it with your SMHI request
+------------------------------------
+
+import { getAppLocation } from "./location";
+
+async function fetchWeather() {
+  const { lat, lon, city, source } = await getAppLocation();
+
+  const weatherURL =
+    `https://opendata-download-metfcst.smhi.se/api/category/pmp3g/version/2/geotype/point/lon/${lon}/lat/${lat}/data.json`;
+
+  const res = await fetch(weatherURL);
+  if (!res.ok) throw new Error(`SMHI error ${res.status}`);
+  const data = await res.json();
+
+  // update your UI
+  document.querySelector(".location")!.textContent = city ?? "Your location";
+  document.querySelector(".location")!.setAttribute("data-source", source);
+  return data;
+}

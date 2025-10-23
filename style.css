@@ -4,10 +4,9 @@ body {
 }
 
 .container {
-  width: 310;
+  width: 310px;
   margin-left: 5px;
   box-sizing: border-box;
-
 }
 
 #location {
@@ -24,7 +23,6 @@ body {
   font-weight: 400;
   font-style: Regular;
   font-size: 21px;
-
 }
 
 #icon {
@@ -64,8 +62,6 @@ body {
   box-sizing: border-box;
 }
 
-
-
 .search {
   display: flex;
   align-items: center;
@@ -75,7 +71,6 @@ body {
 .search input {
   border: 0;
   outline: 0;
-  background: #ebfffc;
   color: #555;
   padding: 5px 15px;
   height: 30px;
@@ -90,9 +85,9 @@ body {
   width: 80px;
   border: 0;
   outline: 0;
-  background: #ebfffc;
   border-radius: 10%;
   cursor: pointer;
+  margin-right: 15px;
 }
 
 @media (min-width: 768px) {
@@ -107,7 +102,6 @@ body {
 
   #message {
     width: 100%;
-
   }
 
   #forecast {

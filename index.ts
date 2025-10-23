@@ -1,6 +1,9 @@
-// WEATHER URL – SMHI:s API for Stockholm
-const weatherURL: string =
-  "https://opendata-download-metfcst.smhi.se/api/category/pmp3g/version/2/geotype/point/lon/18.0686/lat/59.3293/data.json";
+//--------------------------------------------------
+// DEFAULT COORDINATES: start page Stockholm
+//--------------------------------------------------
+const DEFAULT_LAT = 59.3293;
+const DEFAULT_LON = 18.0686;
+const DEFAULT_CITY = "stockholm";
 
 //--------------------------------------------------
 // TYPES
@@ -25,18 +28,15 @@ interface SMHIResponse {
 }
 
 //--------------------------------------------------
-// UTIL: safe parameter lookup
+// GET THE FIRST VALUE OF A PARAMETER BY NAME 
 //--------------------------------------------------
-const getParamValue = (
-  ts: SMHITimeSeries,
-  key: string
-): number | undefined => {
+const getParamValue = (ts: SMHITimeSeries, key: string): number | undefined => {
   const hit = ts.parameters.find((p: SMHIParameter) => p.name === key);
   return hit?.values?.[0];
 };
 
 //--------------------------------------------------
-// CONDITION TEXT
+// CONDITION INDEX
 //--------------------------------------------------
 function getCondition(symbol: number): string {
   const conditions: Record<number, string> = {
@@ -72,38 +72,32 @@ function getCondition(symbol: number): string {
 }
 
 //--------------------------------------------------
-// MAIN FUNCTION – fetch data from API
+// MAIN FUNCTION: fetch data from API
 //--------------------------------------------------
-async function fetchWeather(): Promise<void> {
+async function fetchWeather(
+  lat: number = DEFAULT_LAT,
+  lon: number = DEFAULT_LON,
+  cityName: string = DEFAULT_CITY
+): Promise<void> {
+  const weatherURL = `https://opendata-download-metfcst.smhi.se/api/category/pmp3g/version/2/geotype/point/lon/${lon}/lat/${lat}/data.json`;
+
   try {
     const response = await fetch(weatherURL);
     if (!response.ok) throw new Error(`HTTP error: ${response.status}`);
 
     const data = (await response.json()) as SMHIResponse;
 
-    if (!data.timeSeries || data.timeSeries.length === 0) {
-      console.error("No timeSeries data in response.");
-      return;
-    }
+    if (!data.timeSeries || data.timeSeries.length === 0) return;
 
-    const first = data.timeSeries[0];
-
+    const first = data.timeSeries[0]!;
     const currentTemp = getParamValue(first, "t");
     const weatherSymbol = getParamValue(first, "Wsymb2");
 
-    if (typeof currentTemp !== "number" || typeof weatherSymbol !== "number") {
-      console.error("Missing temp or weather symbol.", {
-        currentTemp,
-        weatherSymbol,
-      });
-      return;
-    }
+    if (typeof currentTemp !== "number" || typeof weatherSymbol !== "number") return;
 
     const conditionText = getCondition(weatherSymbol);
 
-    // predominant_precipitation_type_at_surface (reserved if you need later)
-
-    showCurrentWeather(currentTemp, weatherSymbol, conditionText);
+    showCurrentWeather(currentTemp, weatherSymbol, conditionText, cityName);
     showForecast(data.timeSeries);
     changeDesign(weatherSymbol);
   } catch (error) {
@@ -111,79 +105,50 @@ async function fetchWeather(): Promise<void> {
   }
 }
 
-//----------------------------------------------------------
-// SHOW WEATHER – temp, icon and message
-//----------------------------------------------------------
+//--------------------------------------------------
+// SHOW WEATHER: temp, icon and message 
+//--------------------------------------------------
 function showCurrentWeather(
   temp: number,
   symbol: number,
-  condition: string
+  condition: string,
+  cityName: string
 ): void {
   const tempElement = document.getElementById("temperature");
-  const conditionTextElement = document.getElementById("condition");
   const iconElement = document.getElementById("icon") as HTMLImageElement | null;
   const messageElement = document.getElementById("message");
 
-  if (tempElement) {
-    tempElement.textContent = `${condition} | ${Math.round(temp)}°`;
-  }
-  // If you want a separate condition line:
-  // if (conditionTextElement) conditionTextElement.textContent = condition;
+  if (tempElement) tempElement.textContent = `${condition} | ${Math.round(temp)}°`;
 
   if (iconElement) {
     if (symbol === 1) iconElement.src = "img/sunny.png";
-    else if (symbol === 3 || symbol === 4) iconElement.src = "img/cloudy.png";
-    else if ([5, 6, 9].includes(symbol)) iconElement.src = "img/rainy.png";
+    else if ([3, 4, 5, 6].includes(symbol)) iconElement.src = "img/cloudy.png";
+    else if ([5, 6, 9, 18, 19, 20].includes(symbol)) iconElement.src = "img/rainy.png";
     else if (symbol === 15) iconElement.src = "img/snowy.png";
   }
 
   if (messageElement) {
-    if (symbol === 1) {
-      messageElement.textContent =
-        "Get your sunnies on. Stockholm is looking rather great today.";
-    } else if (symbol === 3 || symbol === 4) {
-      messageElement.textContent =
-        "Light a fire and get cosy. Stockholm is looking grey today.";
-    } else if ([5, 6, 9].includes(symbol)) {
-      messageElement.textContent =
-        "Don’t forget your umbrella. It’s wet in Stockholm today.";
-    } else if (symbol === 15) {
-      messageElement.textContent = "IT’S SNOWING ❄️";
-    } else {
-      messageElement.textContent = "WEATHER UNKNOWN 🤔";
-    }
+    if (symbol === 1) messageElement.textContent =
+      `Get your sunnies on. ${cityName} is looking rather great today.`;
+    else if ([3, 4, 5, 6].includes(symbol)) messageElement.textContent =
+      `Light a fire and get cosy. ${cityName} is looking grey today.`;
+    else if ([5, 6, 9, 18, 19, 20].includes(symbol)) messageElement.textContent =
+      `Don’t forget your umbrella. It’s wet in ${cityName} today.`;
+    else if (symbol === 15) messageElement.textContent =
+      `IT’S SNOWING ❄️ in ${cityName}`;
+    else messageElement.textContent = `WEATHER UNKNOWN 🤔 in ${cityName}`;
   }
 }
 
-// //---------------------------------------------
-// // FORECAST
-// //---------------------------------------------
-// function showForecast(times: SMHITimeSeries[]): void {
-//   const forecastElement = document.getElementById("forecast");
-//   if (!forecastElement) return;
-
-//   forecastElement.innerHTML = "";
-
-//   // Assuming 3-hour steps: every 8th ≈ next day. Show next 5 days.
-//   for (let i = 8; i < 8 * 5; i += 8) {
-//     const t = times[i];
-//     if (!t) continue;
-
-//     const temp = getParamValue(t, "t");
-//     if (typeof temp !== "number") continue;
-
-//     const date = t.validTime.slice(0, 10);
-//     forecastElement.innerHTML += `<p>${date}: ${Math.round(temp)}°C</p>`;
-//   }
-// }
-
-function showForecast(times) {
+//--------------------------------------------------
+// FORECAST
+//--------------------------------------------------
+function showForecast(times: SMHITimeSeries[]): void {
   const forecastEl = document.getElementById("forecast");
   if (!forecastEl) return;
 
-  forecastEl.innerHTML = ""; // clear old content
-
-  const today = new Date(times[0].validTime);
+  forecastEl.innerHTML = "";
+  const today = new Date(times[0]!.validTime);
   let daysAdded = 0;
   let lastDate = today.toDateString();
 
@@ -191,16 +156,14 @@ function showForecast(times) {
     const thisDate = new Date(t.validTime);
     const dateString = thisDate.toDateString();
 
-    // hoppa över samma dag
     if (dateString === lastDate) continue;
 
     lastDate = dateString;
-
     const tempParam = t.parameters.find(p => p.name === "t");
     if (!tempParam) continue;
 
     const temp = tempParam.values[0];
-    const weekday = thisDate.toLocaleDateString("en-US", { weekday: "long" });
+    const weekday = thisDate.toLocaleDateString("en-US", { weekday: "short" });
 
     forecastEl.innerHTML += `
       <div class="forecast-row">
@@ -210,44 +173,124 @@ function showForecast(times) {
     `;
 
     daysAdded++;
-    if (daysAdded >= 5) break; // visa bara 5 dagar (imorgon + 4 framåt)
+    if (daysAdded >= 5) break;
   }
+}
+
+//--------------------------------------------------
+// SEARCHBAR: hardcoded cities
+//--------------------------------------------------
+const searchInput = document.querySelector(".search input") as HTMLInputElement;
+const searchBtn = document.querySelector(".search button") as HTMLButtonElement;
+
+const cities: Record<string, { lat: number; lon: number }> = {
+  "malmö": { lat: 55.6050, lon: 13.0038 },
+  "umeå": { lat: 63.8258, lon: 20.2630 },
+  "göteborg": { lat: 57.7089, lon: 11.9746 },
+  "stockholm": { lat: 59.3293, lon: 18.0686 },
+  "skogen": { lat: 57.4205, lon: 15.0473 },
+  "köpenhamn": { lat: 55.6761, lon: 12.5683 },
+};
+
+searchBtn.addEventListener("click", handleSearch);
+searchInput.addEventListener("keydown", (e: KeyboardEvent) => {
+  if (e.key === "Enter") handleSearch();
+});
+
+function handleSearch(): void {
+  const city = searchInput.value.trim().toLowerCase();
+  if (!city) return;
+
+  const coords = cities[city];
+  if (!coords) {
+    alert("City not found! Try any of these cities; Malmö, Umeå, Göteborg, Stockholm, Köpenhamn or Skogen 🌳.");
+    return;
+  }
+
+  fetchWeather(coords.lat, coords.lon, city.charAt(0).toUpperCase() + city.slice(1));
 }
 
 
 //--------------------------------------------------
-// CHANGING DESIGN DEPENDING ON WEATHER
+// CHANGING DESIGN: depending on weather
 //--------------------------------------------------
 function changeDesign(symbol: number): void {
   const icon = document.getElementById("icon") as HTMLImageElement | null;
+  const searchBox = document.querySelector(".search input") as HTMLInputElement | null;
+  const searchBtn = document.querySelector(".search button") as HTMLButtonElement | null;
 
+  // sunny
   if (symbol === 1) {
-    // sunny
     document.body.style.backgroundColor = "#F7E9B9";
     document.body.style.color = "#2A5510";
     if (icon) icon.src = "img/sunny.png";
-  } else if (symbol === 3 || symbol === 4) {
+    if (searchBox) {
+      searchBox.style.border = "2px solid #2A5510";
+      searchBox.style.color = "#2A5510";
+    }
+    if (searchBtn) {
+      searchBtn.style.backgroundColor = "#2A5510";
+      searchBtn.style.color = "#F7E9B9";
+    }
+
     // cloudy
+  } else if ([3, 4, 5, 6].includes(symbol)) {
     document.body.style.backgroundColor = "#FFFFFF";
     document.body.style.color = "#F47775";
     if (icon) icon.src = "img/cloudy.png";
-  } else if ([5, 6, 9].includes(symbol)) {
+    if (searchBox) {
+      searchBox.style.border = "2px solid #F47775";
+      searchBox.style.color = "#F47775";
+    }
+    if (searchBtn) {
+      searchBtn.style.backgroundColor = "#F47775";
+      searchBtn.style.color = "#FFFFFF";
+    }
+
     // rainy
+  } else if ([5, 6, 9, 18, 19, 20].includes(symbol)) {
     document.body.style.backgroundColor = "#BDE8FA";
     document.body.style.color = "#164A68";
     if (icon) icon.src = "img/rainy.png";
-  } else if (symbol === 15) {
+    if (searchBox) {
+      searchBox.style.border = "2px solid #164A68";
+      searchBox.style.color = "#164A68";
+    }
+    if (searchBtn) {
+      searchBtn.style.backgroundColor = "#164A68";
+      searchBtn.style.color = "#BDE8FA";
+    }
+
     // snowy
+  } else if (symbol === 15) {
     document.body.style.backgroundColor = "#FFFFFF";
     document.body.style.color = "#045381";
     if (icon) icon.src = "img/snowy.png";
+    if (searchBox) {
+      searchBox.style.border = "2px solid #045381";
+      searchBox.style.color = "#045381";
+    }
+    if (searchBtn) {
+      searchBtn.style.backgroundColor = "#045381";
+      searchBtn.style.color = "#FFFFFF";
+    }
+
+    // fallback
   } else {
     document.body.style.backgroundColor = "beige";
     document.body.style.color = "black";
+    if (searchBox) {
+      searchBox.style.border = "2px solid black";
+      searchBox.style.color = "black";
+    }
+    if (searchBtn) {
+      searchBtn.style.backgroundColor = "black";
+      searchBtn.style.color = "white";
+    }
   }
 }
 
 //---------------------------------------------
-// 6️⃣  STARTING THE APP
+//  START THE APP
 //---------------------------------------------
 fetchWeather();

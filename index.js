@@ -34,10 +34,14 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
         if (op[0] & 5) throw op[1]; return { value: op[0] ? op[1] : void 0, done: true };
     }
 };
-// WEATHER URL – SMHI:s API for Stockholm
-var weatherURL = "https://opendata-download-metfcst.smhi.se/api/category/pmp3g/version/2/geotype/point/lon/18.0686/lat/59.3293/data.json";
 //--------------------------------------------------
-// UTIL: safe parameter lookup
+// DEFAULT COORDINATES: start page Stockholm
+//--------------------------------------------------
+var DEFAULT_LAT = 59.3293;
+var DEFAULT_LON = 18.0686;
+var DEFAULT_CITY = "stockholm";
+//--------------------------------------------------
+// GET THE FIRST VALUE OF A PARAMETER BY NAME 
 //--------------------------------------------------
 var getParamValue = function (ts, key) {
     var _a;
@@ -45,7 +49,7 @@ var getParamValue = function (ts, key) {
     return (_a = hit === null || hit === void 0 ? void 0 : hit.values) === null || _a === void 0 ? void 0 : _a[0];
 };
 //--------------------------------------------------
-// CONDITION TEXT
+// CONDITION INDEX
 //--------------------------------------------------
 function getCondition(symbol) {
     var conditions = {
@@ -80,118 +84,94 @@ function getCondition(symbol) {
     return conditions[symbol] || "Unknown";
 }
 //--------------------------------------------------
-// MAIN FUNCTION – fetch data from API
+// MAIN FUNCTION: fetch data from API
 //--------------------------------------------------
 function fetchWeather() {
-    return __awaiter(this, void 0, void 0, function () {
-        var response, data, first, currentTemp, weatherSymbol, conditionText, error_1;
+    return __awaiter(this, arguments, void 0, function (lat, lon, cityName) {
+        var weatherURL, response, data, first, currentTemp, weatherSymbol, conditionText, error_1;
+        if (lat === void 0) { lat = DEFAULT_LAT; }
+        if (lon === void 0) { lon = DEFAULT_LON; }
+        if (cityName === void 0) { cityName = DEFAULT_CITY; }
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0:
-                    _a.trys.push([0, 3, , 4]);
-                    return [4 /*yield*/, fetch(weatherURL)];
+                    weatherURL = "https://opendata-download-metfcst.smhi.se/api/category/pmp3g/version/2/geotype/point/lon/".concat(lon, "/lat/").concat(lat, "/data.json");
+                    _a.label = 1;
                 case 1:
+                    _a.trys.push([1, 4, , 5]);
+                    return [4 /*yield*/, fetch(weatherURL)];
+                case 2:
                     response = _a.sent();
                     if (!response.ok)
                         throw new Error("HTTP error: ".concat(response.status));
                     return [4 /*yield*/, response.json()];
-                case 2:
+                case 3:
                     data = (_a.sent());
-                    if (!data.timeSeries || data.timeSeries.length === 0) {
-                        console.error("No timeSeries data in response.");
+                    if (!data.timeSeries || data.timeSeries.length === 0)
                         return [2 /*return*/];
-                    }
                     first = data.timeSeries[0];
                     currentTemp = getParamValue(first, "t");
                     weatherSymbol = getParamValue(first, "Wsymb2");
-                    if (typeof currentTemp !== "number" || typeof weatherSymbol !== "number") {
-                        console.error("Missing temp or weather symbol.", {
-                            currentTemp: currentTemp,
-                            weatherSymbol: weatherSymbol,
-                        });
+                    if (typeof currentTemp !== "number" || typeof weatherSymbol !== "number")
                         return [2 /*return*/];
-                    }
                     conditionText = getCondition(weatherSymbol);
-                    // predominant_precipitation_type_at_surface (reserved if you need later)
-                    showCurrentWeather(currentTemp, weatherSymbol, conditionText);
+                    showCurrentWeather(currentTemp, weatherSymbol, conditionText, cityName);
                     showForecast(data.timeSeries);
                     changeDesign(weatherSymbol);
-                    return [3 /*break*/, 4];
-                case 3:
+                    return [3 /*break*/, 5];
+                case 4:
                     error_1 = _a.sent();
                     console.error("Error while fetching weather data:", error_1);
-                    return [3 /*break*/, 4];
-                case 4: return [2 /*return*/];
+                    return [3 /*break*/, 5];
+                case 5: return [2 /*return*/];
             }
         });
     });
 }
-//----------------------------------------------------------
-// SHOW WEATHER – temp, icon and message
-//----------------------------------------------------------
-function showCurrentWeather(temp, symbol, condition) {
+//--------------------------------------------------
+// SHOW WEATHER: temp, icon and message 
+//--------------------------------------------------
+function showCurrentWeather(temp, symbol, condition, cityName) {
     var tempElement = document.getElementById("temperature");
-    var conditionTextElement = document.getElementById("condition");
     var iconElement = document.getElementById("icon");
     var messageElement = document.getElementById("message");
-    if (tempElement) {
+    if (tempElement)
         tempElement.textContent = "".concat(condition, " | ").concat(Math.round(temp), "\u00B0");
-    }
-    // If you want a separate condition line:
-    // if (conditionTextElement) conditionTextElement.textContent = condition;
     if (iconElement) {
         if (symbol === 1)
             iconElement.src = "img/sunny.png";
-        else if (symbol === 3 || symbol === 4)
+        else if ([3, 4, 5, 6].includes(symbol))
             iconElement.src = "img/cloudy.png";
-        else if ([5, 6, 9].includes(symbol))
+        else if ([5, 6, 9, 18, 19, 20].includes(symbol))
             iconElement.src = "img/rainy.png";
         else if (symbol === 15)
             iconElement.src = "img/snowy.png";
     }
     if (messageElement) {
-        if (symbol === 1) {
+        if (symbol === 1)
             messageElement.textContent =
-                "Get your sunnies on. Stockholm is looking rather great today.";
-        }
-        else if (symbol === 3 || symbol === 4) {
+                "Get your sunnies on. ".concat(cityName, " is looking rather great today.");
+        else if ([3, 4, 5, 6].includes(symbol))
             messageElement.textContent =
-                "Light a fire and get cosy. Stockholm is looking grey today.";
-        }
-        else if ([5, 6, 9].includes(symbol)) {
+                "Light a fire and get cosy. ".concat(cityName, " is looking grey today.");
+        else if ([5, 6, 9, 18, 19, 20].includes(symbol))
             messageElement.textContent =
-                "Don’t forget your umbrella. It’s wet in Stockholm today.";
-        }
-        else if (symbol === 15) {
-            messageElement.textContent = "IT’S SNOWING ❄️";
-        }
-        else {
-            messageElement.textContent = "WEATHER UNKNOWN 🤔";
-        }
+                "Don\u2019t forget your umbrella. It\u2019s wet in ".concat(cityName, " today.");
+        else if (symbol === 15)
+            messageElement.textContent =
+                "IT\u2019S SNOWING \u2744\uFE0F in ".concat(cityName);
+        else
+            messageElement.textContent = "WEATHER UNKNOWN \uD83E\uDD14 in ".concat(cityName);
     }
 }
-// //---------------------------------------------
-// // FORECAST
-// //---------------------------------------------
-// function showForecast(times: SMHITimeSeries[]): void {
-//   const forecastElement = document.getElementById("forecast");
-//   if (!forecastElement) return;
-//   forecastElement.innerHTML = "";
-//   // Assuming 3-hour steps: every 8th ≈ next day. Show next 5 days.
-//   for (let i = 8; i < 8 * 5; i += 8) {
-//     const t = times[i];
-//     if (!t) continue;
-//     const temp = getParamValue(t, "t");
-//     if (typeof temp !== "number") continue;
-//     const date = t.validTime.slice(0, 10);
-//     forecastElement.innerHTML += `<p>${date}: ${Math.round(temp)}°C</p>`;
-//   }
-// }
+//--------------------------------------------------
+// FORECAST
+//--------------------------------------------------
 function showForecast(times) {
     var forecastEl = document.getElementById("forecast");
     if (!forecastEl)
         return;
-    forecastEl.innerHTML = ""; // clear old content
+    forecastEl.innerHTML = "";
     var today = new Date(times[0].validTime);
     var daysAdded = 0;
     var lastDate = today.toDateString();
@@ -199,7 +179,6 @@ function showForecast(times) {
         var t = times_1[_i];
         var thisDate = new Date(t.validTime);
         var dateString = thisDate.toDateString();
-        // hoppa över samma dag
         if (dateString === lastDate)
             continue;
         lastDate = dateString;
@@ -207,52 +186,124 @@ function showForecast(times) {
         if (!tempParam)
             continue;
         var temp = tempParam.values[0];
-        var weekday = thisDate.toLocaleDateString("en-US", { weekday: "long" });
+        var weekday = thisDate.toLocaleDateString("en-US", { weekday: "short" });
         forecastEl.innerHTML += "\n      <div class=\"forecast-row\">\n        <span class=\"weekday\">".concat(weekday, "</span>\n        <span class=\"temp\">").concat(temp, "\u00B0</span>\n      </div>\n    ");
         daysAdded++;
         if (daysAdded >= 5)
-            break; // visa bara 5 dagar (imorgon + 4 framåt)
+            break;
     }
 }
 //--------------------------------------------------
-// CHANGING DESIGN DEPENDING ON WEATHER
+// SEARCHBAR: hardcoded cities
+//--------------------------------------------------
+var searchInput = document.querySelector(".search input");
+var searchBtn = document.querySelector(".search button");
+var cities = {
+    "malmö": { lat: 55.6050, lon: 13.0038 },
+    "umeå": { lat: 63.8258, lon: 20.2630 },
+    "göteborg": { lat: 57.7089, lon: 11.9746 },
+    "stockholm": { lat: 59.3293, lon: 18.0686 },
+    "skogen": { lat: 57.4205, lon: 15.0473 },
+    "köpenhamn": { lat: 55.6761, lon: 12.5683 },
+};
+searchBtn.addEventListener("click", handleSearch);
+searchInput.addEventListener("keydown", function (e) {
+    if (e.key === "Enter")
+        handleSearch();
+});
+function handleSearch() {
+    var city = searchInput.value.trim().toLowerCase();
+    if (!city)
+        return;
+    var coords = cities[city];
+    if (!coords) {
+        alert("City not found! Try any of these cities; Malmö, Umeå, Göteborg, Stockholm, Köpenhamn or Skogen 🌳.");
+        return;
+    }
+    fetchWeather(coords.lat, coords.lon, city.charAt(0).toUpperCase() + city.slice(1));
+}
+//--------------------------------------------------
+// CHANGING DESIGN: depending on weather
 //--------------------------------------------------
 function changeDesign(symbol) {
     var icon = document.getElementById("icon");
+    var searchBox = document.querySelector(".search input");
+    var searchBtn = document.querySelector(".search button");
+    // sunny
     if (symbol === 1) {
-        // sunny
         document.body.style.backgroundColor = "#F7E9B9";
         document.body.style.color = "#2A5510";
         if (icon)
             icon.src = "img/sunny.png";
-    }
-    else if (symbol === 3 || symbol === 4) {
+        if (searchBox) {
+            searchBox.style.border = "2px solid #2A5510";
+            searchBox.style.color = "#2A5510";
+        }
+        if (searchBtn) {
+            searchBtn.style.backgroundColor = "#2A5510";
+            searchBtn.style.color = "#F7E9B9";
+        }
         // cloudy
+    }
+    else if ([3, 4, 5, 6].includes(symbol)) {
         document.body.style.backgroundColor = "#FFFFFF";
         document.body.style.color = "#F47775";
         if (icon)
             icon.src = "img/cloudy.png";
-    }
-    else if ([5, 6, 9].includes(symbol)) {
+        if (searchBox) {
+            searchBox.style.border = "2px solid #F47775";
+            searchBox.style.color = "#F47775";
+        }
+        if (searchBtn) {
+            searchBtn.style.backgroundColor = "#F47775";
+            searchBtn.style.color = "#FFFFFF";
+        }
         // rainy
+    }
+    else if ([5, 6, 9, 18, 19, 20].includes(symbol)) {
         document.body.style.backgroundColor = "#BDE8FA";
         document.body.style.color = "#164A68";
         if (icon)
             icon.src = "img/rainy.png";
+        if (searchBox) {
+            searchBox.style.border = "2px solid #164A68";
+            searchBox.style.color = "#164A68";
+        }
+        if (searchBtn) {
+            searchBtn.style.backgroundColor = "#164A68";
+            searchBtn.style.color = "#BDE8FA";
+        }
+        // snowy
     }
     else if (symbol === 15) {
-        // snowy
         document.body.style.backgroundColor = "#FFFFFF";
         document.body.style.color = "#045381";
         if (icon)
             icon.src = "img/snowy.png";
+        if (searchBox) {
+            searchBox.style.border = "2px solid #045381";
+            searchBox.style.color = "#045381";
+        }
+        if (searchBtn) {
+            searchBtn.style.backgroundColor = "#045381";
+            searchBtn.style.color = "#FFFFFF";
+        }
+        // fallback
     }
     else {
         document.body.style.backgroundColor = "beige";
         document.body.style.color = "black";
+        if (searchBox) {
+            searchBox.style.border = "2px solid black";
+            searchBox.style.color = "black";
+        }
+        if (searchBtn) {
+            searchBtn.style.backgroundColor = "black";
+            searchBtn.style.color = "white";
+        }
     }
 }
 //---------------------------------------------
-// 6️⃣  STARTING THE APP
+//  START THE APP
 //---------------------------------------------
 fetchWeather();
